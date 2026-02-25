@@ -1,0 +1,54 @@
+name: Build OpenWrt SDK with AmneziaWG & Podkop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential clang flex bison g++ gawk \
+        gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
+        python3 rsync unzip zlib1g-dev file wget zstd
+
+    - name: Download OpenWrt SDK
+      run: |
+        wget https://downloads.openwrt.org/releases/24.10.5/targets/ramips/mt7621/openwrt-sdk-24.10.5-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+        tar --zstd -xf openwrt-sdk-24.10.5-ramips-mt7621_*.tar.zst
+
+    - name: Clone OpenWrt source packages
+      run: |
+        git clone https://github.com/openwrt/packages.git
+        git clone https://github.com/openwrt/luci.git
+
+    - name: Clone Podkop
+      run: |
+        git clone https://github.com/mantimi/podkop.git
+
+    - name: Move packages into SDK
+      run: |
+        mv packages openwrt-sdk-24.10.5-ramips-mt7621*/package/
+        mv luci openwrt-sdk-24.10.5-ramips-mt7621*/package/
+        mv podkop openwrt-sdk-24.10.5-ramips-mt7621*/package/
+
+    - name: Update feeds
+      run: |
+        cd openwrt-sdk-24.10.5-ramips-mt7621*
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Build Podkop
+      run: |
+        cd openwrt-sdk-24.10.5-ramips-mt7621*
+        make defconfig
+        make package/podkop/compile V=s
+
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: openwrt-ipk
+        path: openwrt-sdk-24.10.5-ramips-mt7621*/bin/packages/
