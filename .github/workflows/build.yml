@@ -21,34 +21,33 @@ jobs:
         cd openwrt
         git checkout v24.10.5
 
-    - name: Update feeds
+    - name: Fix feeds
       run: |
-       cd openwrt
-       ./scripts/feeds update -a || true
-       ./scripts/feeds install -a
+        cd openwrt
+        rm -f feeds.conf
+        cp feeds.conf.default feeds.conf
 
-    # 🔥 ВАЖНО — правильное добавление Podkop
-    - name: Add Podkop
+    - name: Add Podkop feed
       run: |
-        git clone https://github.com/itdoginfo/podkop.git
-        mv podkop/openwrt/package/luci-app-podkop openwrt/package/
-        mv podkop/openwrt/package/podkop openwrt/package/
+        cd openwrt
+        echo "src-git podkop https://github.com/itdoginfo/openwrt-packages.git" >> feeds.conf
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
 
     - name: Configure build
       run: |
         cd openwrt
-        make defconfig
 
         # Target
         echo "CONFIG_TARGET_ramips=y" >> .config
         echo "CONFIG_TARGET_ramips_mt7621=y" >> .config
         echo "CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_mi-router-4a-gigabit=y" >> .config
 
-        # Rootfs
+        # Filesystem
         echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
         echo "CONFIG_TARGET_ROOTFS_EXT4FS=n" >> .config
 
-        # Minimal LuCI
+        # LuCI minimal
         echo "CONFIG_PACKAGE_luci-base=y" >> .config
         echo "CONFIG_PACKAGE_luci-mod-admin-full=y" >> .config
         echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
@@ -56,7 +55,6 @@ jobs:
         echo "CONFIG_PACKAGE_uhttpd=y" >> .config
 
         # Podkop
-        echo "CONFIG_PACKAGE_podkop=y" >> .config
         echo "CONFIG_PACKAGE_luci-app-podkop=y" >> .config
 
         # sing-box minimal
@@ -67,7 +65,7 @@ jobs:
         echo "CONFIG_SINGBOX_WITH_GRPC=n" >> .config
         echo "CONFIG_SINGBOX_WITH_ECH=n" >> .config
 
-        # Remove unnecessary
+        # Remove unnecessary (critical for 16MB)
         echo "CONFIG_IPV6=n" >> .config
         echo "CONFIG_PACKAGE_opkg=n" >> .config
         echo "CONFIG_PACKAGE_ppp=n" >> .config
