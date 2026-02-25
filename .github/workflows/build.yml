@@ -1,4 +1,4 @@
-name: Build OpenWrt MT7621
+name: Build OpenWrt 4A Gigabit Minimal Podkop
 
 on:
   workflow_dispatch:
@@ -27,23 +27,59 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Add AWG package
+    # 🔥 ВАЖНО — правильное добавление Podkop
+    - name: Add Podkop
       run: |
-        git clone https://github.com/Slava-Shchipunov/awg-openwrt.git
-        mv awg-openwrt openwrt/package/awg-openwrt
+        git clone https://github.com/itdoginfo/podkop.git
+        mv podkop/openwrt/package/luci-app-podkop openwrt/package/
+        mv podkop/openwrt/package/podkop openwrt/package/
 
     - name: Configure build
       run: |
         cd openwrt
         make defconfig
-        
+
+        # Target
         echo "CONFIG_TARGET_ramips=y" >> .config
         echo "CONFIG_TARGET_ramips_mt7621=y" >> .config
         echo "CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_mi-router-4a-gigabit=y" >> .config
-        
-        echo "CONFIG_PACKAGE_luci=y" >> .config
-        echo "CONFIG_PACKAGE_awk=y" >> .config
-        
+
+        # Rootfs
+        echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
+        echo "CONFIG_TARGET_ROOTFS_EXT4FS=n" >> .config
+
+        # Minimal LuCI
+        echo "CONFIG_PACKAGE_luci-base=y" >> .config
+        echo "CONFIG_PACKAGE_luci-mod-admin-full=y" >> .config
+        echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
+        echo "CONFIG_PACKAGE_rpcd=y" >> .config
+        echo "CONFIG_PACKAGE_uhttpd=y" >> .config
+
+        # Podkop
+        echo "CONFIG_PACKAGE_podkop=y" >> .config
+        echo "CONFIG_PACKAGE_luci-app-podkop=y" >> .config
+
+        # sing-box minimal
+        echo "CONFIG_PACKAGE_sing-box=y" >> .config
+        echo "CONFIG_SINGBOX_WITH_QUIC=n" >> .config
+        echo "CONFIG_SINGBOX_WITH_UTLS=n" >> .config
+        echo "CONFIG_SINGBOX_WITH_WIREGUARD=n" >> .config
+        echo "CONFIG_SINGBOX_WITH_GRPC=n" >> .config
+        echo "CONFIG_SINGBOX_WITH_ECH=n" >> .config
+
+        # Remove unnecessary
+        echo "CONFIG_IPV6=n" >> .config
+        echo "CONFIG_PACKAGE_opkg=n" >> .config
+        echo "CONFIG_PACKAGE_ppp=n" >> .config
+        echo "CONFIG_PACKAGE_odhcpd=n" >> .config
+        echo "CONFIG_PACKAGE_dnsmasq-full=n" >> .config
+        echo "CONFIG_PACKAGE_kmod-usb2=n" >> .config
+        echo "CONFIG_PACKAGE_kmod-usb3=n" >> .config
+
+        # Size optimization
+        echo "CONFIG_USE_MKLIBS=y" >> .config
+        echo "CONFIG_USE_STRIP=y" >> .config
+
         make defconfig
 
     - name: Download packages
@@ -59,5 +95,5 @@ jobs:
     - name: Upload firmware
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-mt7621
-        path: openwrt/bin/targets/
+        name: openwrt-4a-gigabit-podkop
+        path: openwrt/bin/targets/ramips/mt7621/
