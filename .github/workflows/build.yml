@@ -32,8 +32,6 @@ jobs:
     - name: Build IPK
       run: |
         cd openwrt-sdk-24.10.5-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
         make defconfig
         make package/awg-openwrt/compile V=s
 
