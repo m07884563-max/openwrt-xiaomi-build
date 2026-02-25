@@ -1,4 +1,4 @@
-name: Build OpenWrt 4A Gigabit Minimal Podkop
+name: Build 4A Gigabit MAX Tight (Podkop + WG + SingBox)
 
 on:
   workflow_dispatch:
@@ -29,13 +29,12 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Add Podkop manually
+    - name: Add Podkop package
       run: |
         cd openwrt/package
-        git clone https://github.com/itdoginfo/podkop.git
-        mv podkop luci-app-podkop
+        git clone https://github.com/itdoginfo/podkop.git luci-app-podkop
 
-    - name: Configure build
+    - name: Configure build (MAX tight 16MB)
       run: |
         cd openwrt
 
@@ -62,11 +61,16 @@ jobs:
         echo "CONFIG_PACKAGE_sing-box=y" >> .config
         echo "CONFIG_SINGBOX_WITH_QUIC=n" >> .config
         echo "CONFIG_SINGBOX_WITH_UTLS=n" >> .config
-        echo "CONFIG_SINGBOX_WITH_WIREGUARD=n" >> .config
         echo "CONFIG_SINGBOX_WITH_GRPC=n" >> .config
         echo "CONFIG_SINGBOX_WITH_ECH=n" >> .config
+        echo "CONFIG_SINGBOX_WITH_WIREGUARD=n" >> .config
 
-        # REMOVE EVERYTHING NOT NEEDED
+        # WireGuard
+        echo "CONFIG_PACKAGE_kmod-wireguard=y" >> .config
+        echo "CONFIG_PACKAGE_wireguard-tools=y" >> .config
+        echo "CONFIG_PACKAGE_luci-proto-wireguard=y" >> .config
+
+        # REMOVE EVERYTHING NOT CRITICAL
         echo "CONFIG_IPV6=n" >> .config
         echo "CONFIG_PACKAGE_opkg=n" >> .config
         echo "CONFIG_PACKAGE_ppp=n" >> .config
@@ -74,7 +78,8 @@ jobs:
         echo "CONFIG_PACKAGE_dnsmasq-full=n" >> .config
         echo "CONFIG_PACKAGE_kmod-usb2=n" >> .config
         echo "CONFIG_PACKAGE_kmod-usb3=n" >> .config
-        echo "CONFIG_PACKAGE_firewall4=y" >> .config
+        echo "CONFIG_PACKAGE_wpad-openssl=n" >> .config
+        echo "CONFIG_PACKAGE_wpad-basic-mbedtls=y" >> .config
 
         # Size optimization
         echo "CONFIG_USE_MKLIBS=y" >> .config
@@ -92,8 +97,12 @@ jobs:
         cd openwrt
         make -j$(nproc)
 
+    - name: Show firmware size
+      run: |
+        ls -lh openwrt/bin/targets/ramips/mt7621/
+
     - name: Upload firmware
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-4a-gigabit-podkop
+        name: openwrt-4a-gigabit-tight
         path: openwrt/bin/targets/ramips/mt7621/
