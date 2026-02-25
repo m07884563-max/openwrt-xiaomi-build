@@ -23,10 +23,12 @@ jobs:
         wget https://downloads.openwrt.org/releases/24.10.5/targets/ramips/mt7621/openwrt-sdk-24.10.5-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst
         tar --zstd -xf openwrt-sdk-24.10.5-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst
 
-    - name: Clone AmneziaWG and Podkop
+    - name: Add Podkop feed
       run: |
-        git clone https://github.com/Slava-Shchipunov/awg-openwrt.git
-        git clone https://github.com/mantimi/podkop.git
+        cd openwrt-sdk-24.10.5-ramips-mt7621*
+        echo "src-git podkop https://podkop.net/openwrt.git" >> feeds.conf.default
+        ./scripts/feeds update podkop
+        ./scripts/feeds install -a -p podkop
 
     - name: Inject packages into SDK
       run: |
