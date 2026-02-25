@@ -1,4 +1,5 @@
-name: Build 4A Gigabit MAX Tight (Podkop + WG + SingBox)
+
+name: Build 4A Gigabit Tight 16MB
 
 on:
   workflow_dispatch:
@@ -34,56 +35,52 @@ jobs:
         cd openwrt/package
         git clone https://github.com/itdoginfo/podkop.git luci-app-podkop
 
-    - name: Configure build (MAX tight 16MB)
+    - name: Create .config
       run: |
         cd openwrt
+        cat << "EOF" > .config
+        CONFIG_TARGET_ramips=y
+        CONFIG_TARGET_ramips_mt7621=y
+        CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_mi-router-4a-gigabit=y
 
-        # Target
-        echo "CONFIG_TARGET_ramips=y" >> .config
-        echo "CONFIG_TARGET_ramips_mt7621=y" >> .config
-        echo "CONFIG_TARGET_ramips_mt7621_DEVICE_xiaomi_mi-router-4a-gigabit=y" >> .config
+        CONFIG_TARGET_ROOTFS_SQUASHFS=y
+        CONFIG_TARGET_ROOTFS_EXT4FS=n
+        CONFIG_TARGET_INITRAMFS=n
+        CONFIG_TARGET_IMAGES_GZIP=y
 
-        # Filesystem
-        echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
-        echo "CONFIG_TARGET_ROOTFS_EXT4FS=n" >> .config
+        CONFIG_PACKAGE_luci=y
+        CONFIG_PACKAGE_luci-base=y
+        CONFIG_PACKAGE_luci-mod-admin-full=y
+        CONFIG_PACKAGE_luci-theme-bootstrap=y
+        CONFIG_PACKAGE_rpcd=y
+        CONFIG_PACKAGE_uhttpd=y
 
-        # LuCI minimal
-        echo "CONFIG_PACKAGE_luci-base=y" >> .config
-        echo "CONFIG_PACKAGE_luci-mod-admin-full=y" >> .config
-        echo "CONFIG_PACKAGE_luci-theme-bootstrap=y" >> .config
-        echo "CONFIG_PACKAGE_rpcd=y" >> .config
-        echo "CONFIG_PACKAGE_uhttpd=y" >> .config
+        CONFIG_PACKAGE_luci-app-podkop=y
 
-        # Podkop
-        echo "CONFIG_PACKAGE_luci-app-podkop=y" >> .config
+        CONFIG_PACKAGE_sing-box=y
+        CONFIG_SINGBOX_WITH_QUIC=n
+        CONFIG_SINGBOX_WITH_UTLS=n
+        CONFIG_SINGBOX_WITH_GRPC=n
+        CONFIG_SINGBOX_WITH_ECH=n
+        CONFIG_SINGBOX_WITH_WIREGUARD=n
 
-        # sing-box minimal
-        echo "CONFIG_PACKAGE_sing-box=y" >> .config
-        echo "CONFIG_SINGBOX_WITH_QUIC=n" >> .config
-        echo "CONFIG_SINGBOX_WITH_UTLS=n" >> .config
-        echo "CONFIG_SINGBOX_WITH_GRPC=n" >> .config
-        echo "CONFIG_SINGBOX_WITH_ECH=n" >> .config
-        echo "CONFIG_SINGBOX_WITH_WIREGUARD=n" >> .config
+        CONFIG_PACKAGE_kmod-wireguard=y
+        CONFIG_PACKAGE_wireguard-tools=y
+        CONFIG_PACKAGE_luci-proto-wireguard=y
 
-        # WireGuard
-        echo "CONFIG_PACKAGE_kmod-wireguard=y" >> .config
-        echo "CONFIG_PACKAGE_wireguard-tools=y" >> .config
-        echo "CONFIG_PACKAGE_luci-proto-wireguard=y" >> .config
+        CONFIG_IPV6=n
+        CONFIG_PACKAGE_opkg=n
+        CONFIG_PACKAGE_ppp=n
+        CONFIG_PACKAGE_odhcpd=n
+        CONFIG_PACKAGE_dnsmasq-full=n
+        CONFIG_PACKAGE_kmod-usb2=n
+        CONFIG_PACKAGE_kmod-usb3=n
+        CONFIG_PACKAGE_wpad-openssl=n
+        CONFIG_PACKAGE_wpad-basic-mbedtls=y
 
-        # REMOVE EVERYTHING NOT CRITICAL
-        echo "CONFIG_IPV6=n" >> .config
-        echo "CONFIG_PACKAGE_opkg=n" >> .config
-        echo "CONFIG_PACKAGE_ppp=n" >> .config
-        echo "CONFIG_PACKAGE_odhcpd=n" >> .config
-        echo "CONFIG_PACKAGE_dnsmasq-full=n" >> .config
-        echo "CONFIG_PACKAGE_kmod-usb2=n" >> .config
-        echo "CONFIG_PACKAGE_kmod-usb3=n" >> .config
-        echo "CONFIG_PACKAGE_wpad-openssl=n" >> .config
-        echo "CONFIG_PACKAGE_wpad-basic-mbedtls=y" >> .config
-
-        # Size optimization
-        echo "CONFIG_USE_MKLIBS=y" >> .config
-        echo "CONFIG_USE_STRIP=y" >> .config
+        CONFIG_USE_MKLIBS=y
+        CONFIG_USE_STRIP=y
+        EOF
 
         make defconfig
 
@@ -97,9 +94,9 @@ jobs:
         cd openwrt
         make -j$(nproc)
 
-    - name: Show firmware size
+    - name: Show sysupgrade size
       run: |
-        ls -lh openwrt/bin/targets/ramips/mt7621/
+        ls -lh openwrt/bin/targets/ramips/mt7621/*sysupgrade.bin || true
 
     - name: Upload firmware
       uses: actions/upload-artifact@v4
