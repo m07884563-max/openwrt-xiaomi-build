@@ -23,9 +23,9 @@ jobs:
 
     - name: Update feeds
       run: |
-        cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
+       cd openwrt
+       ./scripts/feeds update -a || true
+       ./scripts/feeds install -a
 
     # 🔥 ВАЖНО — правильное добавление Podkop
     - name: Add Podkop
